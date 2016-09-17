@@ -311,6 +311,49 @@ wait_for_ready
 
 
 #
+# build a Java project and send it to SonarQube.
+# see http://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
+
+apt-get install -y --no-install-recommends git-core
+apt-get install -y --no-install-recommends default-jdk
+
+# download and install SonarQube Scanner.
+mkdir /opt/sonar-scanner
+pushd /opt/sonar-scanner
+sonarqube_scanner_directory_name=sonar-scanner-2.7
+sonarqube_scanner_artifact=$sonarqube_scanner_directory_name.zip
+sonarqube_scanner_download_url=https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
+sonarqube_scanner_download_sig_url=$sonarqube_scanner_download_url.asc
+wget -q $sonarqube_scanner_download_url
+wget -q $sonarqube_scanner_download_sig_url
+gpg --batch --verify $sonarqube_scanner_artifact.asc $sonarqube_scanner_artifact
+unzip -q $sonarqube_scanner_artifact
+mv $sonarqube_scanner_directory_name/* .
+rm -rf $sonarqube_scanner_directory_name $sonarqube_scanner_artifact* bin/*.bat
+dos2unix conf/sonar-scanner.properties
+sed -i -E 's,^#?(sonar.host.url=).*,\1http://localhost:9000,' conf/sonar-scanner.properties
+export PATH="$PATH:$PWD/bin"
+popd
+
+# get, compile, scan and submit a raw project to SonarQube.
+pushd ~
+git clone --quiet https://github.com/rgl/test-ssl-connection.git
+cd test-ssl-connection
+rm -rf build && mkdir -p build
+javac -version
+javac -Werror -d build src/com/ruilopes/*.java
+jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
+jar tf test-ssl-connection.jar
+sonar-scanner \
+    -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
+    -Dsonar.projectName=com.ruilopes/rgl/test-ssl-connection \
+    -Dsonar.projectVersion=master \
+    -Dsonar.java.source=8 \
+    -Dsonar.sources=src
+popd
+
+
+#
 # show summary.
 
 echo "You can now access the SonarQube Web UI at https://$config_fqdn"
