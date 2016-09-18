@@ -344,7 +344,9 @@ javac -version
 javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
+# see http://docs.sonarqube.org/display/SONAR/Analysis+Parameters
 sonar-scanner \
+    -Dsonar.links.scm=https://github.com/rgl/test-ssl-connection \
     -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
     -Dsonar.projectName=com.ruilopes/rgl/test-ssl-connection \
     -Dsonar.projectVersion=master \
