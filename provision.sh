@@ -311,11 +311,12 @@ wait_for_ready
 
 
 #
-# build a Java project and send it to SonarQube.
+# build some Java projects and send them to SonarQube.
 # see http://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
 
 apt-get install -y --no-install-recommends git-core
 apt-get install -y --no-install-recommends default-jdk
+apt-get install -y --no-install-recommends maven
 
 # download and install SonarQube Scanner.
 mkdir /opt/sonar-scanner
@@ -352,6 +353,20 @@ sonar-scanner \
     -Dsonar.projectVersion=master \
     -Dsonar.java.source=8 \
     -Dsonar.sources=src
+popd
+
+
+# get, compile, scan and submit a maven based project to SonarQube.
+pushd ~
+git clone https://github.com/SonarSource/sonar-examples
+cd sonar-examples/projects/languages/java/maven/java-maven-simple
+mvn install
+# the sonar:sonar goal will pick most of things from pom.xml, but
+# you can also define them on the command line.
+# see https://maven.apache.org/pom.html
+# see http://docs.sonarqube.org/display/SONAR/Analysis+Parameters
+mvn sonar:sonar \
+    -Dsonar.links.scm=https://github.com/SonarSource/sonar-examples
 popd
 
 
