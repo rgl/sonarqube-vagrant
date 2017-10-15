@@ -22,7 +22,9 @@ Add the following entry to your `/etc/hosts` file:
 10.10.10.103 sonarqube.example.com
 ``` 
 
-Run `vagrant up` to launch the server and view [SonarQube page](https://sonarqube.example.com).
+Depending on your virtualization provider, run `vagrant up --provider=libvirt` or `vagrant up --provider=virtualbox` to launch the server.
+
+View the [SonarQube page](https://sonarqube.example.com).
 
 The default username and password are `admin`.
 
