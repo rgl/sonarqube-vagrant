@@ -230,7 +230,8 @@ gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4C
 
 # download and install SonarQube.
 pushd /opt/sonarqube
-sonarqube_directory_name=sonarqube-6.0
+sonarqube_version=6.5
+sonarqube_directory_name=sonarqube-$sonarqube_version
 sonarqube_artifact=$sonarqube_directory_name.zip
 sonarqube_download_url=https://sonarsource.bintray.com/Distribution/sonarqube/$sonarqube_artifact
 sonarqube_download_sig_url=$sonarqube_download_url.asc
@@ -258,7 +259,7 @@ sed -i -E 's,^#?(sonar.jdbc.url=jdbc:postgresql://).*,\1localhost/sonarqube,' /o
 sed -i -E 's,^#?(sonar.web.host=).*,\1127.0.0.1,' /opt/sonarqube/conf/sonar.properties
 
 # start it.
-cat>/etc/systemd/system/sonarqube.service<<'EOF'
+cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
 Description=sonarqube
 After=network.target
@@ -269,7 +270,7 @@ User=sonarqube
 Group=sonarqube
 WorkingDirectory=/opt/sonarqube
 ExecStart=/usr/bin/java \
-    -jar /opt/sonarqube/lib/sonar-application-6.0.jar \
+    -jar /opt/sonarqube/lib/sonar-application-$sonarqube_version.jar \
     -Dsonar.log.console=true
 Restart=always
 
@@ -288,6 +289,21 @@ function wait_for_ready {
 }
 wait_for_ready
 
+# list out-of-box installed plugins. at the time of writing they were:
+#   csharp
+#   flex
+#   java
+#   javascript
+#   php
+#   python
+#   scmgit
+#   scmsvn
+#   xml
+curl -s -u admin:admin localhost:9000/api/plugins/installed \
+    | jq --raw-output '.plugins[].key' \
+    | sort \
+    | xargs -n 1 -I % echo 'out-of-box installed plugin: %'
+
 # update the existing plugins.
 curl -s -u admin:admin localhost:9000/api/plugins/updates \
     | jq --raw-output '.plugins[].key' \
@@ -295,11 +311,8 @@ curl -s -u admin:admin localhost:9000/api/plugins/updates \
 
 # install new plugins.
 plugins=(
-    'ldap'            # http://docs.sonarqube.org/display/PLUG/LDAP+Plugin
-    'JSON'            # https://github.com/racodond/sonar-json-plugin
+    'ldap'            # https://docs.sonarqube.org/display/PLUG/LDAP+Plugin
     'checkstyle'      # https://github.com/checkstyle/sonar-checkstyle
-    'javaProperties'  # https://github.com/racodond/sonar-jproperties-plugin
-    'xml'             # http://docs.sonarqube.org/display/PLUG/XML+Plugin
 )
 for plugin in "${plugins[@]}"; do
     echo "installing the $plugin plugin..."
@@ -312,7 +325,7 @@ wait_for_ready
 
 #
 # build some Java projects and send them to SonarQube.
-# see http://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
+# see https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
 
 apt-get install -y --no-install-recommends git-core
 apt-get install -y --no-install-recommends default-jdk
@@ -321,8 +334,9 @@ apt-get install -y --no-install-recommends maven
 # download and install SonarQube Scanner.
 mkdir /opt/sonar-scanner
 pushd /opt/sonar-scanner
-sonarqube_scanner_directory_name=sonar-scanner-2.7
-sonarqube_scanner_artifact=$sonarqube_scanner_directory_name.zip
+sonarqube_scanner_version=3.0.3.778
+sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version
+sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version.zip
 sonarqube_scanner_download_url=https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
 sonarqube_scanner_download_sig_url=$sonarqube_scanner_download_url.asc
 wget -q $sonarqube_scanner_download_url
@@ -345,7 +359,7 @@ javac -version
 javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
-# see http://docs.sonarqube.org/display/SONAR/Analysis+Parameters
+# see https://docs.sonarqube.org/display/SONAR/Analysis+Parameters
 sonar-scanner \
     -Dsonar.links.scm=https://github.com/rgl/test-ssl-connection \
     -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
@@ -358,15 +372,16 @@ popd
 
 # get, compile, scan and submit a maven based project to SonarQube.
 pushd ~
-git clone https://github.com/SonarSource/sonar-examples
-cd sonar-examples/projects/languages/java/maven/java-maven-simple
-mvn install
+git clone https://github.com/SonarSource/sonar-scanning-examples
+cd sonar-scanning-examples/sonarqube-scanner-maven
+mvn --batch-mode install
 # the sonar:sonar goal will pick most of things from pom.xml, but
 # you can also define them on the command line.
 # see https://maven.apache.org/pom.html
-# see http://docs.sonarqube.org/display/SONAR/Analysis+Parameters
-mvn sonar:sonar \
-    -Dsonar.links.scm=https://github.com/SonarSource/sonar-examples
+# see https://docs.sonarqube.org/display/SONAR/Analysis+Parameters
+mvn --batch-mode \
+    sonar:sonar \
+    -Dsonar.links.scm=https://github.com/SonarSource/sonar-scanning-examples
 popd
 
 
