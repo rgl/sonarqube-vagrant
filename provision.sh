@@ -10,6 +10,7 @@ config_fqdn=$(hostname --fqdn)
 echo 'Defaults env_keep += "DEBIAN_FRONTEND"' >/etc/sudoers.d/env_keep_apt
 chmod 440 /etc/sudoers.d/env_keep_apt
 export DEBIAN_FRONTEND=noninteractive
+apt-get update
 
 
 #
@@ -230,7 +231,7 @@ gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4C
 
 # download and install SonarQube.
 pushd /opt/sonarqube
-sonarqube_version=6.5
+sonarqube_version=6.7
 sonarqube_directory_name=sonarqube-$sonarqube_version
 sonarqube_artifact=$sonarqube_directory_name.zip
 sonarqube_download_url=https://sonarsource.bintray.com/Distribution/sonarqube/$sonarqube_artifact
@@ -298,6 +299,7 @@ wait_for_ready
 #   python
 #   scmgit
 #   scmsvn
+#   typescript
 #   xml
 curl -s -u admin:admin localhost:9000/api/plugins/installed \
     | jq --raw-output '.plugins[].key' \
