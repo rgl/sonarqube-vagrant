@@ -20,4 +20,9 @@ Vagrant.configure('2') do |config|
   end
 
   config.vm.provision :shell, path: 'provision.sh'
+
+  config.trigger.before :up do
+    ldap_ca_cert_path = '../windows-domain-controller-vagrant/tmp/ExampleEnterpriseRootCA.der'
+    run "sh -c 'mkdir -p tmp && cp #{ldap_ca_cert_path} tmp'" if File.file? ldap_ca_cert_path
+  end
 end

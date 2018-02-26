@@ -16,11 +16,22 @@ This will:
 
 Build and install the [Ubuntu Base Box](https://github.com/rgl/ubuntu-vagrant).
 
+Install the following Vagrant plugin:
+
+```bash
+vagrant plugin install vagrant-triggers # see https://github.com/emyl/vagrant-triggers
+```
+
+If you want to use LDAP for user authentication, you have to:
+
+1. have [rgl/windows-domain-controller-vagrant](https://github.com/rgl/windows-domain-controller-vagrant) up and running at `../windows-domain-controller-vagrant`.
+1. uncomment the `config_authentication='ldap'` line inside [provision.sh](provision.sh).
+
 Add the following entry to your `/etc/hosts` file:
 
 ```
 10.10.10.103 sonarqube.example.com
-``` 
+```
 
 Depending on your virtualization provider, run `vagrant up --provider=libvirt` or `vagrant up --provider=virtualbox` to launch the server.
 
@@ -35,4 +46,5 @@ The default username and password are `admin`.
 
 * [SonarQube Documentation](http://docs.sonarqube.org/display/SONAR/Documentation)
 * [SonarQube: Analysis Parameters](http://docs.sonarqube.org/display/SONAR/Analysis+Parameters)
+* [SonarQube: Web Api Documentation](https://sonarqube.example.com/web_api)
 * [Maven: POM Reference](https://maven.apache.org/pom.html)

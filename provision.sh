@@ -3,6 +3,13 @@ set -eux
 
 config_fqdn=$(hostname --fqdn)
 
+# use the built-in user database.
+config_authentication='sonarqube'
+# OR also use LDAP.
+# NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
+# NB AND you must manually copy its tmp/ExampleEnterpriseRootCA.der file to this environment tmp/ directory.
+#config_authentication='ldap'
+
 
 #
 # configure apt.
@@ -324,6 +331,49 @@ echo 'restarting SonarQube...'
 curl -s -u admin:admin -X POST localhost:9000/api/system/restart
 wait_for_ready
 
+#
+# use LDAP for user authentication (when enabled).
+# NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
+# see https://docs.sonarqube.org/display/PLUG/LDAP+Plugin
+if [ "$config_authentication" = 'ldap' ]; then
+echo '192.168.56.2 dc.example.com' >>/etc/hosts
+openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt
+update-ca-certificates
+cat >>/opt/sonarqube/conf/sonar.properties <<'EOF'
+
+
+#--------------------------------------------------------------------------------------------------
+# LDAP
+sonar.security.realm=LDAP
+ldap.url=ldaps://dc.example.com:636
+ldap.bindDn=jane.doe@example.com
+ldap.bindPassword=HeyH0Password
+ldap.user.baseDn=CN=Users,DC=example,DC=com
+ldap.user.request=(&(sAMAccountName={login})(objectClass=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
+ldap.user.realNameAttribute=displayName
+ldap.user.emailAttribute=mail
+ldap.group.baseDn=CN=Users,DC=example,DC=com
+ldap.group.request=(&(objectCategory=group)(member={dn}))
+ldap.group.idAttribute=sAMAccountName
+
+EOF
+echo 'restarting SonarQube...'
+systemctl restart sonarqube
+wait_for_ready
+
+echo 'creating the Domain Admins group...'
+curl -s -u admin:admin -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
+domain_admins_permissions=(
+    'admin'
+    'profileadmin'
+    'gateadmin'
+    'provisioning'
+)
+for permission in "${domain_admins_permissions[@]}"; do
+    echo "adding the $permission permission to the Domain Admins group..."
+    curl -s -u admin:admin -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
+done
+fi
 
 #
 # build some Java projects and send them to SonarQube.
