@@ -145,7 +145,7 @@ popd
 # setup nginx proxy to SonarQube that is running at localhost:9000.
 
 apt-get install -y --no-install-recommends nginx
-cat<<EOF>/etc/nginx/sites-available/sonarqube
+cat >/etc/nginx/sites-available/sonarqube <<EOF
 ssl_session_cache shared:SSL:4m;
 ssl_session_timeout 6h;
 #ssl_stapling on;
@@ -229,9 +229,9 @@ install -d -o root -g sonarqube -m 751 /opt/sonarqube
 #   sub   2048R/06855C1D 2015-05-25
 gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE
 
-# download and install SonarQube.
+# download and install SonarQube LTS.
 pushd /opt/sonarqube
-sonarqube_version=6.7
+sonarqube_version=6.7.2
 sonarqube_directory_name=sonarqube-$sonarqube_version
 sonarqube_artifact=$sonarqube_directory_name.zip
 sonarqube_download_url=https://sonarsource.bintray.com/Distribution/sonarqube/$sonarqube_artifact
