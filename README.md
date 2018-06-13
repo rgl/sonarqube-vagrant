@@ -16,11 +16,7 @@ This will:
 
 Build and install the [Ubuntu Base Box](https://github.com/rgl/ubuntu-vagrant).
 
-Install the following Vagrant plugin:
-
-```bash
-vagrant plugin install vagrant-triggers # see https://github.com/emyl/vagrant-triggers
-```
+Install Vagrant 2.1+.
 
 If you want to use LDAP for user authentication, you have to:
 
