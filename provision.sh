@@ -36,7 +36,7 @@ update-grub2
 #
 # configure the firewall.
 
-apt-get install -y iptables
+apt-get install -y iptables iptables-persistent
 # reset the firewall.
 # see https://wiki.archlinux.org/index.php/iptables
 for table in raw filter nat mangle; do
@@ -61,12 +61,7 @@ iptables -A INPUT -p tcp --dport 22 -j ACCEPT
 iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 # load iptables rules on boot.
-iptables-save >/etc/iptables-rules-v4.conf
-cat>/etc/network/if-pre-up.d/iptables-restore<<'EOF'
-#!/bin/sh
-iptables-restore </etc/iptables-rules-v4.conf
-EOF
-chmod +x /etc/network/if-pre-up.d/iptables-restore
+iptables-save >/etc/iptables/rules.v4
 
 
 #
@@ -213,7 +208,7 @@ sudo -sHu postgres createdb -E UTF8 -O sonarqube sonarqube
 # install SonarQube.
 
 # install dependencies.
-apt-get install -y default-jre
+apt-get install -y openjdk-8-jre-headless
 apt-get install -y unzip
 apt-get install -y dos2unix
 
@@ -380,7 +375,7 @@ fi
 # see https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
 
 apt-get install -y --no-install-recommends git-core
-apt-get install -y --no-install-recommends default-jdk
+apt-get install -y --no-install-recommends openjdk-8-jdk-headless
 apt-get install -y --no-install-recommends maven
 
 # download and install SonarQube Scanner.
