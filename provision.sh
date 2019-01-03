@@ -233,10 +233,10 @@ gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4C
 
 # download and install SonarQube LTS.
 pushd /opt/sonarqube
-sonarqube_version=6.7.4
+sonarqube_version=7.5
 sonarqube_directory_name=sonarqube-$sonarqube_version
 sonarqube_artifact=$sonarqube_directory_name.zip
-sonarqube_download_url=https://sonarsource.bintray.com/Distribution/sonarqube/$sonarqube_artifact
+sonarqube_download_url=https://binaries.sonarsource.com/Distribution/sonarqube/$sonarqube_artifact
 sonarqube_download_sig_url=$sonarqube_download_url.asc
 wget -q $sonarqube_download_url
 wget -q $sonarqube_download_sig_url
@@ -384,7 +384,7 @@ pushd /opt/sonar-scanner
 sonarqube_scanner_version=3.2.0.1227
 sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version-linux
 sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version-linux.zip
-sonarqube_scanner_download_url=https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
+sonarqube_scanner_download_url=https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
 sonarqube_scanner_download_sig_url=$sonarqube_scanner_download_url.asc
 wget -q $sonarqube_scanner_download_url
 wget -q $sonarqube_scanner_download_sig_url
