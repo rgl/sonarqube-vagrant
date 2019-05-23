@@ -211,6 +211,7 @@ sudo -sHu postgres createdb -E UTF8 -O sonarqube sonarqube
 apt-get install -y openjdk-8-jre-headless
 apt-get install -y unzip
 apt-get install -y dos2unix
+apt-get install -y --no-install-recommends gnupg
 
 # add the sonarqube user.
 groupadd --system sonarqube
@@ -225,18 +226,19 @@ adduser \
 install -d -o root -g sonarqube -m 751 /opt/sonarqube
 
 # import sonarqube key. gpg --list-keys --fingerprint should output:
-#   pub   2048R/D26468DE 2015-05-25
-#         Key fingerprint = F118 2E81 C792 9289 21DB  CAB4 CFCA 4A29 D264 68DE
-#   uid                  sonarsource_deployer (Sonarsource Deployer) <infra@sonarsource.com>
-#   sub   2048R/06855C1D 2015-05-25
-gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE
+#   pub   rsa2048 2015-05-25 [SC]
+#         F118 2E81 C792 9289 21DB  CAB4 CFCA 4A29 D264 68DE
+#   uid           [ unknown] sonarsource_deployer (Sonarsource Deployer) <infra@sonarsource.com>
+#   sub   rsa2048 2015-05-25 [E]
+gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE \
+    || gpg --keyserver ipv4.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE
 
 # download and install SonarQube LTS.
 pushd /opt/sonarqube
-sonarqube_version=6.7.4
+sonarqube_version=6.7.7
 sonarqube_directory_name=sonarqube-$sonarqube_version
 sonarqube_artifact=$sonarqube_directory_name.zip
-sonarqube_download_url=https://sonarsource.bintray.com/Distribution/sonarqube/$sonarqube_artifact
+sonarqube_download_url=https://binaries.sonarsource.com/Distribution/sonarqube/$sonarqube_artifact
 sonarqube_download_sig_url=$sonarqube_download_url.asc
 wget -q $sonarqube_download_url
 wget -q $sonarqube_download_sig_url
