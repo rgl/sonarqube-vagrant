@@ -383,10 +383,10 @@ apt-get install -y --no-install-recommends maven
 # download and install SonarQube Scanner.
 mkdir /opt/sonar-scanner
 pushd /opt/sonar-scanner
-sonarqube_scanner_version=3.2.0.1227
+sonarqube_scanner_version=3.3.0.1492
 sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version-linux
 sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version-linux.zip
-sonarqube_scanner_download_url=https://sonarsource.bintray.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
+sonarqube_scanner_download_url=https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
 sonarqube_scanner_download_sig_url=$sonarqube_scanner_download_url.asc
 wget -q $sonarqube_scanner_download_url
 wget -q $sonarqube_scanner_download_sig_url
