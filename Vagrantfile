@@ -10,6 +10,7 @@ Vagrant.configure('2') do |config|
     lv.cpus = 2
     lv.cpu_mode = 'host-passthrough'
     lv.keymap = 'pt'
+    config.vm.synced_folder '.', '/vagrant', type: 'nfs'
   end
 
   config.vm.provider :virtualbox do |vb|
