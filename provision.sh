@@ -341,16 +341,22 @@ cat >>/opt/sonarqube/conf/sonar.properties <<'EOF'
 
 #--------------------------------------------------------------------------------------------------
 # LDAP
+
+# General Configuration.
 sonar.security.realm=LDAP
-ldap.url=ldaps://dc.example.com:636
+ldap.url=ldaps://dc.example.com
 ldap.bindDn=jane.doe@example.com
 ldap.bindPassword=HeyH0Password
+
+# User Configuration.
 ldap.user.baseDn=CN=Users,DC=example,DC=com
 ldap.user.request=(&(sAMAccountName={login})(objectClass=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))
 ldap.user.realNameAttribute=displayName
 ldap.user.emailAttribute=mail
+
+# Group Configuration.
 ldap.group.baseDn=CN=Users,DC=example,DC=com
-ldap.group.request=(&(objectCategory=group)(member={dn}))
+ldap.group.request=(&(objectClass=group)(member={dn}))
 ldap.group.idAttribute=sAMAccountName
 
 EOF
