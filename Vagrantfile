@@ -21,6 +21,8 @@ Vagrant.configure('2') do |config|
   end
 
   config.vm.provision :shell, path: 'provision.sh'
+  config.vm.provision :shell, path: 'provision-examples.sh'
+  config.vm.provision :shell, path: 'summary.sh'
 
   config.trigger.before :up do |trigger|
     ldap_ca_cert_path = '../windows-domain-controller-vagrant/tmp/ExampleEnterpriseRootCA.der'
