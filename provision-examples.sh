@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eux
 
+sonarqube_edition="$(curl -s localhost:9000/api/navigation/global | jq --raw-output '.edition')"
+
 #
 # build some Java projects and send them to SonarQube.
 # see https://docs.sonarqube.org/7.9/analysis/scan/sonarscanner/
@@ -38,9 +40,22 @@ javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
 # see https://docs.sonarqube.org/7.9/analysis/analysis-parameters/
-# NB "-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)"
-#     can only be used on the SonarQube non-Community edition.
+sonarqube_scanner_extra_args=()
+if [ false && "$sonarqube_edition" != 'community' ]; then
+# TODO disable the automatic creation of projects on SQ
+# TODO create the project in SQ and set its default branch name to
+#      what is returned by:
+#       git symbolic-ref refs/remotes/origin/HEAD | sed 's,^refs/remotes/origin/,,'
+# NB if this is the first time the project is being analysed, you cannot send the
+#    sonar.branch.name property. if you do, the following error will be raised:
+#       Project was never analyzed. A regular analysis is required before a branch analysis.
+# TODO only send sonar.branch.* properties when the project was already analysed.
+# TODO make sure the default branch is correctly set at the SQ project level.
+sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
+#sonarqube_scanner_extra_args+=("-Dsonar.branch.target=master")
+fi
 sonar-scanner \
+    "${sonarqube_scanner_extra_args[@]}" \
     "-Dsonar.links.scm=$(git remote get-url origin)" \
     -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
     -Dsonar.projectName=com.ruilopes/rgl/test-ssl-connection \

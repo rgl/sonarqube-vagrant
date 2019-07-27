@@ -3,6 +3,12 @@ set -eux
 
 config_fqdn=$(hostname --fqdn)
 
+# the sonarqube edition. use one of:
+#   community
+#   developer
+#   enterprise
+config_sonarqube_edition=$1; shift
+
 # use the built-in user database.
 config_authentication='sonarqube'
 # OR also use LDAP.
@@ -237,12 +243,19 @@ gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4C
 pushd /opt/sonarqube
 sonarqube_version=7.9.1
 sonarqube_directory_name=sonarqube-$sonarqube_version
-sonarqube_artifact=$sonarqube_directory_name.zip
+if [ "$config_sonarqube_edition" = 'community' ]; then
+sonarqube_artifact=sonarqube-$sonarqube_version.zip
 sonarqube_download_url=https://binaries.sonarsource.com/Distribution/sonarqube/$sonarqube_artifact
+else
+sonarqube_artifact=sonarqube-$config_sonarqube_edition-$sonarqube_version.zip
+sonarqube_download_url=https://binaries.sonarsource.com/CommercialDistribution/sonarqube-$config_sonarqube_edition/$sonarqube_artifact
+fi
 sonarqube_download_sig_url=$sonarqube_download_url.asc
 wget -q $sonarqube_download_url
 wget -q $sonarqube_download_sig_url
+if [ "$config_sonarqube_edition" = 'community' ]; then
 gpg --batch --verify $sonarqube_artifact.asc $sonarqube_artifact
+fi
 unzip -q $sonarqube_artifact
 mv $sonarqube_directory_name/* .
 rm -rf $sonarqube_directory_name bin $sonarqube_artifact*

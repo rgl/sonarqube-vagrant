@@ -1,3 +1,5 @@
+sonarqube_edition = 'community' # community, developer or enterprise.
+
 Vagrant.configure('2') do |config|
   config.vm.box = 'ubuntu-18.04-amd64'
 
@@ -20,7 +22,7 @@ Vagrant.configure('2') do |config|
     vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
   end
 
-  config.vm.provision :shell, path: 'provision.sh'
+  config.vm.provision :shell, path: 'provision.sh', args: [sonarqube_edition]
   config.vm.provision :shell, path: 'provision-examples.sh'
   config.vm.provision :shell, path: 'summary.sh'
 
