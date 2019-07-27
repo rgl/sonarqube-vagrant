@@ -208,7 +208,7 @@ sudo -sHu postgres createdb -E UTF8 -O sonarqube sonarqube
 # install SonarQube.
 
 # install dependencies.
-apt-get install -y openjdk-8-jre-headless
+apt-get install -y openjdk-11-jre-headless
 apt-get install -y unzip
 apt-get install -y dos2unix
 apt-get install -y --no-install-recommends gnupg
@@ -235,7 +235,7 @@ gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4C
 
 # download and install SonarQube LTS.
 pushd /opt/sonarqube
-sonarqube_version=6.7.7
+sonarqube_version=7.9.1
 sonarqube_directory_name=sonarqube-$sonarqube_version
 sonarqube_artifact=$sonarqube_directory_name.zip
 sonarqube_download_url=https://binaries.sonarsource.com/Distribution/sonarqube/$sonarqube_artifact
@@ -263,6 +263,15 @@ sed -i -E 's,^#?(sonar.jdbc.url=jdbc:postgresql://).*,\1localhost/sonarqube,' /o
 # configure it to only listen at localhost (nginx will proxy to it).
 sed -i -E 's,^#?(sonar.web.host=).*,\1127.0.0.1,' /opt/sonarqube/conf/sonar.properties
 
+# tune the system limits for making elasticsearch happy.
+# see https://www.kernel.org/doc/Documentation/sysctl/fs.txt
+# see https://www.kernel.org/doc/Documentation/sysctl/vm.txt
+cat>/etc/sysctl.d/98-elasticsearch.conf<<'EOF'
+#fs.nr_open = 65535
+vm.max_map_count = 262144
+EOF
+systemctl restart procps
+
 # start it.
 cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
@@ -273,7 +282,20 @@ After=network.target
 Type=simple
 User=sonarqube
 Group=sonarqube
+# increase the number of max file descritors.
+# NB this will always be bounded by "sysctl fs.nr_open".
+# NB execute "sysctl -a" and "systemctl show" to see the system defaults.
+# NB without this elasticsearch refuses to start with:
+#       max file descriptors [4096] for elasticsearch process is too low, increase to at least [65535]
+LimitNOFILE=infinity
+# increase the max amount of memory that can be locked.
+# NB this will always be bounded by "sysctl vm.max_map_count".
+# NB execute "sysctl -a" and "systemctl show" to see the system defaults.
+# NB without this elasticsearch refuses to start with:
+#       max virtual memory areas vm.max_map_count [65530] is too low, increase to at least [262144]
+LimitMEMLOCK=infinity
 WorkingDirectory=/opt/sonarqube
+ExecStartPre=/bin/sh -c 'ulimit -a; sysctl fs.nr_open vm.max_map_count'
 ExecStart=/usr/bin/java \
     -jar /opt/sonarqube/lib/sonar-application-$sonarqube_version.jar \
     -Dsonar.log.console=true
@@ -295,15 +317,26 @@ function wait_for_ready {
 wait_for_ready
 
 # list out-of-box installed plugins. at the time of writing they were:
+#   authgithub
+#   authsaml
 #   csharp
+#   cssfamily
 #   flex
+#   go
+#   jacoco
 #   java
 #   javascript
+#   kotlin
+#   ldap
 #   php
 #   python
+#   ruby
 #   scmgit
 #   scmsvn
+#   sonarscala
 #   typescript
+#   vbnet
+#   web
 #   xml
 curl -s -u admin:admin localhost:9000/api/plugins/installed \
     | jq --raw-output '.plugins[].key' \
@@ -317,7 +350,6 @@ curl -s -u admin:admin localhost:9000/api/plugins/updates \
 
 # install new plugins.
 plugins=(
-    'ldap'            # https://docs.sonarqube.org/display/PLUG/LDAP+Plugin
     'checkstyle'      # https://github.com/checkstyle/sonar-checkstyle
 )
 for plugin in "${plugins[@]}"; do
@@ -331,7 +363,7 @@ wait_for_ready
 #
 # use LDAP for user authentication (when enabled).
 # NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://docs.sonarqube.org/display/PLUG/LDAP+Plugin
+# see https://docs.sonarqube.org/7.9/instance-administration/delegated-auth/
 if [ "$config_authentication" = 'ldap' ]; then
 echo '192.168.56.2 dc.example.com' >>/etc/hosts
 openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt
@@ -380,10 +412,10 @@ fi
 
 #
 # build some Java projects and send them to SonarQube.
-# see https://docs.sonarqube.org/display/SCAN/Analyzing+with+SonarQube+Scanner
+# see https://docs.sonarqube.org/7.9/analysis/scan/sonarscanner/
 
 apt-get install -y --no-install-recommends git-core
-apt-get install -y --no-install-recommends openjdk-8-jdk-headless
+apt-get install -y --no-install-recommends openjdk-11-jdk-headless
 apt-get install -y --no-install-recommends maven
 
 # download and install SonarQube Scanner.
@@ -414,12 +446,14 @@ javac -version
 javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
-# see https://docs.sonarqube.org/display/SONAR/Analysis+Parameters
+# see https://docs.sonarqube.org/7.9/analysis/analysis-parameters/
+# NB "-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)"
+#     can only be used on the SonarQube non-Community edition.
 sonar-scanner \
-    -Dsonar.links.scm=https://github.com/rgl/test-ssl-connection \
+    "-Dsonar.links.scm=$(git remote get-url origin)" \
     -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
     -Dsonar.projectName=com.ruilopes/rgl/test-ssl-connection \
-    -Dsonar.projectVersion=master \
+    "-Dsonar.projectVersion=$(git rev-parse HEAD)" \
     -Dsonar.java.source=8 \
     -Dsonar.sources=src
 popd
@@ -428,15 +462,17 @@ popd
 # get, compile, scan and submit a maven based project to SonarQube.
 pushd ~
 git clone https://github.com/SonarSource/sonar-scanning-examples
-cd sonar-scanning-examples/sonarqube-scanner-maven
+cd sonar-scanning-examples
+git checkout 9613c31e2d9f97777e0f49a3c1a37d8dce1eb644
+cd maven-basic
 mvn --batch-mode install
 # the sonar:sonar goal will pick most of things from pom.xml, but
 # you can also define them on the command line.
 # see https://maven.apache.org/pom.html
-# see https://docs.sonarqube.org/display/SONAR/Analysis+Parameters
+# see https://docs.sonarqube.org/7.9/analysis/analysis-parameters/
 mvn --batch-mode \
     sonar:sonar \
-    -Dsonar.links.scm=https://github.com/SonarSource/sonar-scanning-examples
+    "-Dsonar.links.scm=$(git remote get-url origin)"
 popd
 
 

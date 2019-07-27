@@ -6,7 +6,7 @@ Vagrant.configure('2') do |config|
   config.vm.network :private_network, ip: '10.10.10.103'
 
   config.vm.provider :libvirt do |lv|
-    lv.memory = 2048
+    lv.memory = 4*1024
     lv.cpus = 2
     lv.cpu_mode = 'host-passthrough'
     lv.keymap = 'pt'
@@ -15,7 +15,7 @@ Vagrant.configure('2') do |config|
 
   config.vm.provider :virtualbox do |vb|
     vb.linked_clone = true
-    vb.memory = 2048
+    vb.memory = 4*1024
     vb.cpus = 2
     vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
   end
