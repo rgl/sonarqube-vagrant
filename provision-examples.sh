@@ -5,7 +5,7 @@ sonarqube_edition="$(curl -s localhost:9000/api/navigation/global | jq --raw-out
 
 #
 # build some Java projects and send them to SonarQube.
-# see https://docs.sonarqube.org/7.9/analysis/scan/sonarscanner/
+# see https://docs.sonarqube.org/8.0/analysis/scan/sonarscanner/
 
 apt-get install -y --no-install-recommends git-core
 apt-get install -y --no-install-recommends openjdk-11-jdk-headless
@@ -14,7 +14,7 @@ apt-get install -y --no-install-recommends maven
 # download and install SonarQube Scanner.
 mkdir /opt/sonar-scanner
 pushd /opt/sonar-scanner
-sonarqube_scanner_version=4.0.0.1744
+sonarqube_scanner_version=4.2.0.1873
 sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version-linux
 sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version-linux.zip
 sonarqube_scanner_download_url=https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
@@ -39,7 +39,7 @@ javac -version
 javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
-# see https://docs.sonarqube.org/7.9/analysis/analysis-parameters/
+# see https://docs.sonarqube.org/8.0/analysis/analysis-parameters/
 sonarqube_scanner_extra_args=()
 if [ false && "$sonarqube_edition" != 'community' ]; then
 # TODO disable the automatic creation of projects on SQ
@@ -69,13 +69,13 @@ popd
 pushd ~
 git clone https://github.com/SonarSource/sonar-scanning-examples
 cd sonar-scanning-examples
-git checkout 9613c31e2d9f97777e0f49a3c1a37d8dce1eb644
-cd maven-basic
+git checkout 81dc6cadd7ed98302eca04100d842712f3e68cd5
+cd sonarqube-scanner-maven/maven-basic
 mvn --batch-mode install
 # the sonar:sonar goal will pick most of things from pom.xml, but
 # you can also define them on the command line.
 # see https://maven.apache.org/pom.html
-# see https://docs.sonarqube.org/7.9/analysis/analysis-parameters/
+# see https://docs.sonarqube.org/8.0/analysis/analysis-parameters/
 mvn --batch-mode \
     sonar:sonar \
     "-Dsonar.links.scm=$(git remote get-url origin)"

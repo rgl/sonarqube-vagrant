@@ -239,9 +239,9 @@ install -d -o root -g sonarqube -m 751 /opt/sonarqube
 gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE \
     || gpg --keyserver ipv4.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE
 
-# download and install SonarQube LTS.
+# download and install SonarQube.
 pushd /opt/sonarqube
-sonarqube_version=7.9.1
+sonarqube_version=8.0
 sonarqube_directory_name=sonarqube-$sonarqube_version
 if [ "$config_sonarqube_edition" = 'community' ]; then
 sonarqube_artifact=sonarqube-$sonarqube_version.zip
@@ -286,6 +286,7 @@ EOF
 systemctl restart procps
 
 # start it.
+# see https://docs.sonarqube.org/8.0/setup/operate-server/
 cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
 Description=sonarqube
@@ -309,10 +310,14 @@ LimitNOFILE=infinity
 LimitMEMLOCK=infinity
 WorkingDirectory=/opt/sonarqube
 ExecStartPre=/bin/sh -c 'ulimit -a; sysctl fs.nr_open vm.max_map_count'
-ExecStart=/usr/bin/java \
+ExecStart=/usr/bin/nohup \
+    /usr/bin/java \
+    -Djava.net.preferIPv4Stack=true \
     -jar /opt/sonarqube/lib/sonar-application-$sonarqube_version.jar \
     -Dsonar.log.console=true
+TimeoutStartSec=5
 Restart=always
+SuccessExitStatus=143
 
 [Install]
 WantedBy=multi-user.target
@@ -330,8 +335,6 @@ function wait_for_ready {
 wait_for_ready
 
 # list out-of-box installed plugins. at the time of writing they were:
-#   authgithub
-#   authsaml
 #   csharp
 #   cssfamily
 #   flex
@@ -340,7 +343,6 @@ wait_for_ready
 #   java
 #   javascript
 #   kotlin
-#   ldap
 #   php
 #   python
 #   ruby
@@ -376,7 +378,7 @@ wait_for_ready
 #
 # use LDAP for user authentication (when enabled).
 # NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://docs.sonarqube.org/7.9/instance-administration/delegated-auth/
+# see https://docs.sonarqube.org/8.0/instance-administration/delegated-auth/
 if [ "$config_authentication" = 'ldap' ]; then
 echo '192.168.56.2 dc.example.com' >>/etc/hosts
 openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt
