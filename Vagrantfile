@@ -1,7 +1,9 @@
 sonarqube_edition = 'community' # community, developer or enterprise.
 
 Vagrant.configure('2') do |config|
-  config.vm.box = 'ubuntu-18.04-amd64'
+
+  config.vm.box = "hashicorp/bionic64"
+  config.vm.box_version = "1.0.282"
 
   config.vm.hostname = 'sonarqube.example.com'
 
