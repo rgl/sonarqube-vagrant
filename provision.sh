@@ -341,9 +341,9 @@ curl --silent --fail --show-error --user admin:admin localhost:9000/api/plugins/
     | xargs -n 1 -I % echo 'out-of-box installed plugin: %'
 
 # update the existing plugins.
-curl -s -u admin:admin localhost:9000/api/plugins/updates \
+curl --silent --fail --show-error --user admin:admin localhost:9000/api/plugins/updates \
     | jq --raw-output '.plugins[].key' \
-    | xargs -n 1 -I % curl -s -u admin:admin -X POST localhost:9000/api/plugins/update -d 'key=%'
+    | xargs -n 1 -I % curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/plugins/update -d 'key=%'
 
 # install new plugins.
 plugins=(
@@ -351,10 +351,10 @@ plugins=(
 )
 for plugin in "${plugins[@]}"; do
     echo "installing the $plugin plugin..."
-    curl -s -u admin:admin -X POST localhost:9000/api/plugins/install -d "key=$plugin"
+    curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/plugins/install -d "key=$plugin"
 done
 echo 'restarting SonarQube...'
-curl -s -u admin:admin -X POST localhost:9000/api/system/restart
+curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/system/restart
 wait_for_ready
 
 #
@@ -394,7 +394,7 @@ systemctl restart sonarqube
 wait_for_ready
 
 echo 'creating the Domain Admins group...'
-curl -s -u admin:admin -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
+curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
 domain_admins_permissions=(
     'admin'
     'profileadmin'
@@ -403,6 +403,6 @@ domain_admins_permissions=(
 )
 for permission in "${domain_admins_permissions[@]}"; do
     echo "adding the $permission permission to the Domain Admins group..."
-    curl -s -u admin:admin -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
+    curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
 done
 fi
