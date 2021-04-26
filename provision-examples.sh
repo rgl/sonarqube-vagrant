@@ -52,6 +52,7 @@ fi
 sonar-scanner \
     -Dsonar.login=admin \
     -Dsonar.password=admin \
+    -Dsonar.qualitygate.wait=true \
     "${sonarqube_scanner_extra_args[@]}" \
     "-Dsonar.links.scm=$(git remote get-url origin)" \
     -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
@@ -77,5 +78,6 @@ mvn --batch-mode \
     sonar:sonar \
     -Dsonar.login=admin \
     -Dsonar.password=admin \
+    -Dsonar.qualitygate.wait=true \
     "-Dsonar.links.scm=$(git remote get-url origin)"
 popd
