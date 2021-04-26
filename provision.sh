@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux
+set -euxo pipefail
 
 config_fqdn=$(hostname --fqdn)
 
@@ -241,7 +241,7 @@ gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4C
 
 # download and install SonarQube.
 pushd /opt/sonarqube
-sonarqube_version=8.0
+sonarqube_version=8.8.0.42792
 sonarqube_directory_name=sonarqube-$sonarqube_version
 if [ "$config_sonarqube_edition" = 'community' ]; then
 sonarqube_artifact=sonarqube-$sonarqube_version.zip
@@ -286,7 +286,7 @@ EOF
 systemctl restart procps
 
 # start it.
-# see https://docs.sonarqube.org/8.0/setup/operate-server/
+# see https://docs.sonarqube.org/8.8/setup/operate-server/
 cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
 Description=sonarqube
@@ -334,26 +334,8 @@ function wait_for_ready {
 }
 wait_for_ready
 
-# list out-of-box installed plugins. at the time of writing they were:
-#   csharp
-#   cssfamily
-#   flex
-#   go
-#   jacoco
-#   java
-#   javascript
-#   kotlin
-#   php
-#   python
-#   ruby
-#   scmgit
-#   scmsvn
-#   sonarscala
-#   typescript
-#   vbnet
-#   web
-#   xml
-curl -s -u admin:admin localhost:9000/api/plugins/installed \
+# list out-of-box installed plugins.
+curl --silent --fail --show-error --user admin:admin localhost:9000/api/plugins/installed \
     | jq --raw-output '.plugins[].key' \
     | sort \
     | xargs -n 1 -I % echo 'out-of-box installed plugin: %'
@@ -378,7 +360,7 @@ wait_for_ready
 #
 # use LDAP for user authentication (when enabled).
 # NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://docs.sonarqube.org/8.0/instance-administration/delegated-auth/
+# see https://docs.sonarqube.org/8.8/instance-administration/delegated-auth/
 if [ "$config_authentication" = 'ldap' ]; then
 echo '192.168.56.2 dc.example.com' >>/etc/hosts
 openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt

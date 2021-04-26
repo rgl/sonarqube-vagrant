@@ -46,7 +46,7 @@ When using the default LDAP settings you can also use the following users:
 
 # References
 
-* [SonarQube Documentation](http://docs.sonarqube.org/display/SONAR/Documentation)
-* [SonarQube: Analysis Parameters](http://docs.sonarqube.org/display/SONAR/Analysis+Parameters)
+* [SonarQube Documentation](https://docs.sonarqube.org/latest/)
+* [SonarQube: Analysis Parameters](https://docs.sonarqube.org/latest/analysis/analysis-parameters/)
 * [SonarQube: Web Api Documentation](https://sonarqube.example.com/web_api)
 * [Maven: POM Reference](https://maven.apache.org/pom.html)
