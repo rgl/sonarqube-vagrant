@@ -217,7 +217,6 @@ sudo -sHu postgres createdb -E UTF8 -O sonarqube sonarqube
 apt-get install -y openjdk-11-jre-headless
 apt-get install -y unzip
 apt-get install -y dos2unix
-apt-get install -y --no-install-recommends gnupg
 
 # add the sonarqube user.
 groupadd --system sonarqube
@@ -231,17 +230,9 @@ adduser \
     sonarqube
 install -d -o root -g sonarqube -m 751 /opt/sonarqube
 
-# import sonarqube key. gpg --list-keys --fingerprint should output:
-#   pub   rsa2048 2015-05-25 [SC]
-#         F118 2E81 C792 9289 21DB  CAB4 CFCA 4A29 D264 68DE
-#   uid           [ unknown] sonarsource_deployer (Sonarsource Deployer) <infra@sonarsource.com>
-#   sub   rsa2048 2015-05-25 [E]
-gpg --keyserver ha.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE \
-    || gpg --keyserver ipv4.pool.sks-keyservers.net --recv-keys F1182E81C792928921DBCAB4CFCA4A29D26468DE
-
 # download and install SonarQube.
 pushd /opt/sonarqube
-sonarqube_version=8.8.0.42792
+sonarqube_version=8.9.7.52159
 sonarqube_directory_name=sonarqube-$sonarqube_version
 if [ "$config_sonarqube_edition" = 'community' ]; then
 sonarqube_artifact=sonarqube-$sonarqube_version.zip
@@ -250,12 +241,7 @@ else
 sonarqube_artifact=sonarqube-$config_sonarqube_edition-$sonarqube_version.zip
 sonarqube_download_url=https://binaries.sonarsource.com/CommercialDistribution/sonarqube-$config_sonarqube_edition/$sonarqube_artifact
 fi
-sonarqube_download_sig_url=$sonarqube_download_url.asc
 wget -q $sonarqube_download_url
-wget -q $sonarqube_download_sig_url
-if [ "$config_sonarqube_edition" = 'community' ]; then
-gpg --batch --verify $sonarqube_artifact.asc $sonarqube_artifact
-fi
 unzip -q $sonarqube_artifact
 mv $sonarqube_directory_name/* .
 rm -rf $sonarqube_directory_name bin $sonarqube_artifact*
@@ -286,7 +272,7 @@ EOF
 systemctl restart procps
 
 # start it.
-# see https://docs.sonarqube.org/8.8/setup/operate-server/
+# see https://docs.sonarqube.org/8.9/setup/operate-server/
 cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
 Description=sonarqube
@@ -334,16 +320,22 @@ function wait_for_ready {
 }
 wait_for_ready
 
+# change the default password to prevent the modify the default password prompt at the first user login.
+curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/users/change_password -d 'login=admin&previousPassword=admin&password=password'
+
+# accept the risk of installing 3rd party plugins.
+curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/settings/set -d 'key=sonar.plugins.risk.consent&value=ACCEPTED'
+
 # list out-of-box installed plugins.
-curl --silent --fail --show-error --user admin:admin localhost:9000/api/plugins/installed \
+curl --silent --fail --show-error --user admin:password localhost:9000/api/plugins/installed \
     | jq --raw-output '.plugins[].key' \
     | sort \
     | xargs -n 1 -I % echo 'out-of-box installed plugin: %'
 
 # update the existing plugins.
-curl --silent --fail --show-error --user admin:admin localhost:9000/api/plugins/updates \
+curl --silent --fail --show-error --user admin:password localhost:9000/api/plugins/updates \
     | jq --raw-output '.plugins[].key' \
-    | xargs -n 1 -I % curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/plugins/update -d 'key=%'
+    | xargs -n 1 -I % curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/plugins/update -d 'key=%'
 
 # install new plugins.
 plugins=(
@@ -351,16 +343,16 @@ plugins=(
 )
 for plugin in "${plugins[@]}"; do
     echo "installing the $plugin plugin..."
-    curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/plugins/install -d "key=$plugin"
+    curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/plugins/install -d "key=$plugin"
 done
 echo 'restarting SonarQube...'
-curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/system/restart
+curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/system/restart
 wait_for_ready
 
 #
 # use LDAP for user authentication (when enabled).
 # NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://docs.sonarqube.org/8.8/instance-administration/delegated-auth/
+# see https://docs.sonarqube.org/8.9/instance-administration/delegated-auth/
 if [ "$config_authentication" = 'ldap' ]; then
 echo '192.168.56.2 dc.example.com' >>/etc/hosts
 openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt
@@ -394,7 +386,7 @@ systemctl restart sonarqube
 wait_for_ready
 
 echo 'creating the Domain Admins group...'
-curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
+curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
 domain_admins_permissions=(
     'admin'
     'profileadmin'
@@ -403,6 +395,6 @@ domain_admins_permissions=(
 )
 for permission in "${domain_admins_permissions[@]}"; do
     echo "adding the $permission permission to the Domain Admins group..."
-    curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
+    curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
 done
 fi

@@ -29,13 +29,13 @@ Add the following entry to your `/etc/hosts` file:
 10.10.10.103 sonarqube.example.com
 ```
 
-Depending on your virtualization provider, run `vagrant up --provider=libvirt` or `vagrant up --provider=virtualbox` to launch the server.
+Depending on your virtualization provider, run `vagrant up --no-destroy-on-error --provider=libvirt` or `vagrant up --no-destroy-on-error --provider=virtualbox` to launch the server.
 
 View the SonarQube home page at https://sonarqube.example.com.
 
 **NB** nginx is setup with a self-signed certificate that you have to trust before being able to access the local SonarQube page.
 
-The default Administrator username and password are `admin`.
+And login as `admin`/`password`.
 
 When using the default LDAP settings you can also use the following users:
 
