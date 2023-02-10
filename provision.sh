@@ -168,12 +168,14 @@ server {
     server_name $config_fqdn;
     ssl_certificate /etc/ssl/private/$config_fqdn-crt.pem;
     ssl_certificate_key /etc/ssl/private/$config_fqdn-keypair.pem;
-    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
     # see https://github.com/cloudflare/sslconfig/blob/master/conf
     # see https://blog.cloudflare.com/it-takes-two-to-chacha-poly/
     # see https://blog.cloudflare.com/do-the-chacha-better-mobile-performance-with-cryptography/
     # NB even though we have CHACHA20 here, the OpenSSL library that ships with Ubuntu 16.04 does not have it. so this is a nop. no problema.
-    ssl_ciphers EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!aNULL:!MD5;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ecdh_curve X25519:P-256:P-384:P-521;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-CHACHA20-POLY1305:ECDHE+AES128:RSA+AES128:ECDHE+AES256:RSA+AES256:ECDHE+3DES:RSA+3DES;
+    ssl_prefer_server_ciphers on;
     add_header Strict-Transport-Security "max-age=31536000; includeSubdomains";
     proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto \$scheme;
@@ -194,6 +196,7 @@ server {
     }
 }
 EOF
+nginx -t # test the configuration.
 rm /etc/nginx/sites-enabled/default
 ln -s ../sites-available/sonarqube /etc/nginx/sites-enabled/sonarqube
 systemctl restart nginx
@@ -214,7 +217,7 @@ sudo -sHu postgres createdb -E UTF8 -O sonarqube sonarqube
 # install SonarQube.
 
 # install dependencies.
-apt-get install -y openjdk-11-jre-headless
+apt-get install -y openjdk-17-jre-headless
 apt-get install -y unzip
 apt-get install -y dos2unix
 
@@ -231,8 +234,9 @@ adduser \
 install -d -o root -g sonarqube -m 751 /opt/sonarqube
 
 # download and install SonarQube.
+# see https://www.sonarsource.com/products/sonarqube/downloads/
 pushd /opt/sonarqube
-sonarqube_version=8.9.7.52159
+sonarqube_version=9.9.0.65466
 sonarqube_directory_name=sonarqube-$sonarqube_version
 if [ "$config_sonarqube_edition" = 'community' ]; then
 sonarqube_artifact=sonarqube-$sonarqube_version.zip
@@ -272,7 +276,7 @@ EOF
 systemctl restart procps
 
 # start it.
-# see https://docs.sonarqube.org/8.9/setup/operate-server/
+# see https://docs.sonarqube.org/9.9/setup-and-upgrade/configure-and-operate-a-server/operating-the-server/
 cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
 Description=sonarqube
@@ -330,12 +334,12 @@ curl --silent --fail --show-error --user admin:password -X POST localhost:9000/a
 curl --silent --fail --show-error --user admin:password localhost:9000/api/plugins/installed \
     | jq --raw-output '.plugins[].key' \
     | sort \
-    | xargs -n 1 -I % echo 'out-of-box installed plugin: %'
+    | xargs -I % echo 'out-of-box installed plugin: %'
 
 # update the existing plugins.
 curl --silent --fail --show-error --user admin:password localhost:9000/api/plugins/updates \
     | jq --raw-output '.plugins[].key' \
-    | xargs -n 1 -I % curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/plugins/update -d 'key=%'
+    | xargs -I % curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/plugins/update -d 'key=%'
 
 # install new plugins.
 plugins=(
@@ -352,7 +356,8 @@ wait_for_ready
 #
 # use LDAP for user authentication (when enabled).
 # NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://docs.sonarqube.org/8.9/instance-administration/delegated-auth/
+# see https://docs.sonarqube.org/9.9/instance-administration/authentication/overview/
+# see https://docs.sonarqube.org/9.9/instance-administration/authentication/ldap/
 if [ "$config_authentication" = 'ldap' ]; then
 echo '192.168.56.2 dc.example.com' >>/etc/hosts
 openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt

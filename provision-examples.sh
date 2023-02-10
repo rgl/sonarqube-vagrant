@@ -5,16 +5,16 @@ sonarqube_edition="$(curl --user admin:password --silent --fail --show-error loc
 
 #
 # build some Java projects and send them to SonarQube.
-# see https://docs.sonarqube.org/8.9/analysis/scan/sonarscanner/
+# see https://docs.sonarqube.org/9.9/analyzing-source-code/scanners/sonarscanner/
 
 apt-get install -y --no-install-recommends git-core
-apt-get install -y --no-install-recommends openjdk-11-jdk-headless
+apt-get install -y --no-install-recommends openjdk-17-jdk-headless
 apt-get install -y --no-install-recommends maven
 
 # download and install SonarQube Scanner.
 mkdir /opt/sonar-scanner
 pushd /opt/sonar-scanner
-sonarqube_scanner_version=4.6.2.2472
+sonarqube_scanner_version=4.8.0.2856
 sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version-linux
 sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version-linux.zip
 sonarqube_scanner_download_url=https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
@@ -36,7 +36,7 @@ javac -version
 javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
-# see https://docs.sonarqube.org/8.9/analysis/analysis-parameters/
+# see https://docs.sonarqube.org/9.9/analyzing-source-code/analysis-parameters/
 sonarqube_scanner_extra_args=()
 if [ "$sonarqube_edition" != 'community' ]; then
 # TODO disable the automatic creation of projects on SQ
@@ -64,13 +64,13 @@ popd
 pushd ~
 git clone https://github.com/SonarSource/sonar-scanning-examples
 cd sonar-scanning-examples
-git checkout 1ed66a331d1a7fb54f138ab4c21c01195f06413c
+git checkout 2573e578f8488e73ce8c98c7695c1c277ec94511
 cd sonarqube-scanner-maven/maven-basic
 mvn --batch-mode install
 # the sonar:sonar goal will pick most of things from pom.xml, but
 # you can also define them on the command line.
 # see https://maven.apache.org/pom.html
-# see https://docs.sonarqube.org/8.9/analysis/analysis-parameters/
+# see https://docs.sonarqube.org/9.9/analyzing-source-code/analysis-parameters/
 mvn --batch-mode \
     sonar:sonar \
     -Dsonar.login=admin \
