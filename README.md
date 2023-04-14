@@ -51,6 +51,61 @@ When using the default LDAP settings you can also use the following users:
 | `jane.doe`  | `HeyH0Password` | `sonar-users`                                             |
 | `john.doe`  | `HeyH0Password` | `sonar-administrators`, `sonar-users`, `Domain Admins`    |
 
+
+# LDAP username to SonarQube username mapping
+
+At some point in time, SonarQube started supporting multiple external identity providers, but unfortunately, for my simple use-case of using a single identity provider (LDAP), it means that the SonarQube username is now randomly generated and does not directly map to the LDAP username.
+
+This means that, for example, the LDAP username `jane.doe` ends up with a SonarQube username like `jane-doe35582` (which is derived from the LDAP user display name and a random number).
+
+This means that from the SonarQube viewpoint, the LDAP user will have an external SonarQube user with the following properties:
+
+```bash
+curl --silent --fail --show-error \
+    --user admin:password \
+    -X GET \
+    'localhost:9000/api/users/search?q=jane.doe' \
+    | jq
+```
+```json
+{
+    "paging": {
+        "pageIndex": 1,
+        "pageSize": 50,
+        "total": 1
+    },
+    "users": [
+        {
+            "login": "jane-doe35582",
+            "name": "Jane Doe",
+            "active": true,
+            "email": "jane.doe@example.com",
+            "groups": [
+                "sonar-users"
+            ],
+            "tokensCount": 0,
+            "local": false,
+            "externalIdentity": "jane.doe",
+            "externalProvider": "LDAP_default",
+            "avatar": "0cba00ca3da1b283a57287bcceb17e35",
+            "lastConnectionDate": "2023-04-14T06:29:42+0000"
+        }
+    ]
+}
+```
+
+Though, the SonarQube username can be later modified with:
+
+```bash
+curl --silent --fail --show-error \
+    --user admin:password \
+    -X POST \
+    localhost:9000/api/users/update_login \
+    -d login=jane-doe35582 \
+    -d newLogin=jane.doe
+```
+
+
 # References
 
 * [SonarQube Documentation](https://docs.sonarqube.org/latest/)
