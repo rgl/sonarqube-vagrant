@@ -16,7 +16,7 @@ This will:
 
 Build and install the [Ubuntu Base Box](https://github.com/rgl/ubuntu-vagrant).
 
-Install Vagrant 2.1+.
+Install Vagrant 2.4.6+.
 
 If you want to use LDAP for user authentication, you have to:
 
@@ -32,8 +32,7 @@ Add the following entry to your `/etc/hosts` file:
 Launch the environment:
 
 ```bash
-# or --provider=virtualbox.
-vagrant up --no-destroy-on-error --provider=libvirt
+vagrant up --provider=libvirt --no-destroy-on-error --no-tty
 ```
 
 View the SonarQube home page at:

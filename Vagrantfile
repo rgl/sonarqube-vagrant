@@ -15,13 +15,6 @@ Vagrant.configure('2') do |config|
     config.vm.synced_folder '.', '/vagrant', type: 'nfs', nfs_version: '4.2', nfs_udp: false
   end
 
-  config.vm.provider :virtualbox do |vb|
-    vb.linked_clone = true
-    vb.memory = 4*1024
-    vb.cpus = 2
-    vb.customize ['modifyvm', :id, '--cableconnected1', 'on']
-  end
-
   config.vm.provision :shell, path: 'provision.sh', args: [sonarqube_edition]
   config.vm.provision :shell, path: 'provision-examples.sh'
   config.vm.provision :shell, path: 'summary.sh'
