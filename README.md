@@ -14,7 +14,7 @@ This will:
 
 # Usage
 
-Build and install the [Ubuntu Base Box](https://github.com/rgl/ubuntu-vagrant).
+Build and install the [Ubuntu Base UEFI Box](https://github.com/rgl/ubuntu-vagrant).
 
 Install Vagrant 2.4.6+.
 

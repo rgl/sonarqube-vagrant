@@ -1,7 +1,8 @@
 sonarqube_edition = 'community' # community, developer or enterprise.
+SONARQUBE_DISK_SIZE_GB = 32
 
 Vagrant.configure('2') do |config|
-  config.vm.box = 'ubuntu-22.04-amd64'
+  config.vm.box = 'ubuntu-22.04-uefi-amd64'
 
   config.vm.hostname = 'sonarqube.example.com'
 
@@ -12,9 +13,11 @@ Vagrant.configure('2') do |config|
     lv.cpus = 2
     lv.cpu_mode = 'host-passthrough'
     lv.keymap = 'pt'
+    lv.machine_virtual_size = SONARQUBE_DISK_SIZE_GB
     config.vm.synced_folder '.', '/vagrant', type: 'nfs', nfs_version: '4.2', nfs_udp: false
   end
 
+  config.vm.provision :shell, path: 'provision-resize-disk.sh'
   config.vm.provision :shell, path: 'provision.sh', args: [sonarqube_edition]
   config.vm.provision :shell, path: 'provision-examples.sh'
   config.vm.provision :shell, path: 'summary.sh'
