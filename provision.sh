@@ -3,6 +3,8 @@ set -euxo pipefail
 
 config_fqdn=$(hostname --fqdn)
 
+config_sonarqube_admin_password=$1; shift
+
 # the sonarqube edition. use one of:
 #   community
 #   developer
@@ -236,7 +238,7 @@ install -d -o root -g sonarqube -m 751 /opt/sonarqube
 # download and install SonarQube.
 # see https://www.sonarsource.com/products/sonarqube/downloads/
 pushd /opt/sonarqube
-sonarqube_version=9.9.0.65466
+sonarqube_version=25.6.0.109173
 sonarqube_directory_name=sonarqube-$sonarqube_version
 if [ "$config_sonarqube_edition" = 'community' ]; then
 sonarqube_artifact=sonarqube-$sonarqube_version.zip
@@ -276,7 +278,7 @@ EOF
 systemctl restart procps
 
 # start it.
-# see https://docs.sonarqube.org/9.9/setup-and-upgrade/configure-and-operate-a-server/operating-the-server/
+# see https://docs.sonarsource.com/sonarqube-community-build/setup-and-upgrade/operating-the-server/
 cat >/etc/systemd/system/sonarqube.service <<EOF
 [Unit]
 Description=sonarqube
@@ -286,7 +288,7 @@ After=network.target
 Type=simple
 User=sonarqube
 Group=sonarqube
-# increase the number of max file descritors.
+# increase the number of max file descriptors.
 # NB this will always be bounded by "sysctl fs.nr_open".
 # NB execute "sysctl -a" and "systemctl show" to see the system defaults.
 # NB without this elasticsearch refuses to start with:
@@ -325,21 +327,27 @@ function wait_for_ready {
 wait_for_ready
 
 # change the default password to prevent the modify the default password prompt at the first user login.
-curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/users/change_password -d 'login=admin&previousPassword=admin&password=password'
+# NB must include at least:
+#       12 characters
+#        1 upper case letter
+#        1 lower case letter
+#        1 number
+#        1 special character
+curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/users/change_password -d "login=admin&previousPassword=admin&password=$config_sonarqube_admin_password"
 
 # accept the risk of installing 3rd party plugins.
-curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/settings/set -d 'key=sonar.plugins.risk.consent&value=ACCEPTED'
+curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/settings/set -d 'key=sonar.plugins.risk.consent&value=ACCEPTED'
 
 # list out-of-box installed plugins.
-curl --silent --fail --show-error --user admin:password localhost:9000/api/plugins/installed \
+curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" localhost:9000/api/plugins/installed \
     | jq --raw-output '.plugins[].key' \
     | sort \
     | xargs -I % echo 'out-of-box installed plugin: %'
 
 # update the existing plugins.
-curl --silent --fail --show-error --user admin:password localhost:9000/api/plugins/updates \
+curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" localhost:9000/api/plugins/updates \
     | jq --raw-output '.plugins[].key' \
-    | xargs -I % curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/plugins/update -d 'key=%'
+    | xargs -I % curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/plugins/update -d 'key=%'
 
 # install new plugins.
 plugins=(
@@ -347,17 +355,17 @@ plugins=(
 )
 for plugin in "${plugins[@]}"; do
     echo "installing the $plugin plugin..."
-    curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/plugins/install -d "key=$plugin"
+    curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/plugins/install -d "key=$plugin"
 done
 echo 'restarting SonarQube...'
-curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/system/restart
+curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/system/restart
 wait_for_ready
 
 #
 # use LDAP for user authentication (when enabled).
 # NB this assumes you are running the Active Directory from https://github.com/rgl/windows-domain-controller-vagrant.
-# see https://docs.sonarqube.org/9.9/instance-administration/authentication/overview/
-# see https://docs.sonarqube.org/9.9/instance-administration/authentication/ldap/
+# see https://docs.sonarsource.com/sonarqube-community-build/instance-administration/authentication/overview/
+# see https://docs.sonarsource.com/sonarqube-community-build/instance-administration/authentication/ldap/
 if [ "$config_authentication" = 'ldap' ]; then
 echo '192.168.56.2 dc.example.com' >>/etc/hosts
 openssl x509 -inform der -in /vagrant/tmp/ExampleEnterpriseRootCA.der -out /usr/local/share/ca-certificates/ExampleEnterpriseRootCA.crt
@@ -391,7 +399,7 @@ systemctl restart sonarqube
 wait_for_ready
 
 echo 'creating the Domain Admins group...'
-curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
+curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/user_groups/create -d 'name=Domain Admins'
 domain_admins_permissions=(
     'admin'
     'profileadmin'
@@ -400,6 +408,6 @@ domain_admins_permissions=(
 )
 for permission in "${domain_admins_permissions[@]}"; do
     echo "adding the $permission permission to the Domain Admins group..."
-    curl --silent --fail --show-error --user admin:password -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
+    curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
 done
 fi

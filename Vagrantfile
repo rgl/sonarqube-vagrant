@@ -1,4 +1,13 @@
-sonarqube_edition = 'community' # community, developer or enterprise.
+SONARQUBE_EDITION = 'community' # community, developer or enterprise.
+
+# NB the password must include, at least:
+#       12 characters
+#        1 upper case letter
+#        1 lower case letter
+#        1 number
+#        1 special character
+SONARQUBE_ADMIN_PASSWORD = 'HeyH0Password!'
+
 SONARQUBE_DISK_SIZE_GB = 32
 
 Vagrant.configure('2') do |config|
@@ -18,9 +27,9 @@ Vagrant.configure('2') do |config|
   end
 
   config.vm.provision :shell, path: 'provision-resize-disk.sh'
-  config.vm.provision :shell, path: 'provision.sh', args: [sonarqube_edition]
-  config.vm.provision :shell, path: 'provision-examples.sh'
-  config.vm.provision :shell, path: 'summary.sh'
+  config.vm.provision :shell, path: 'provision.sh', args: [SONARQUBE_ADMIN_PASSWORD, SONARQUBE_EDITION]
+  config.vm.provision :shell, path: 'provision-examples.sh', args: [SONARQUBE_ADMIN_PASSWORD]
+  config.vm.provision :shell, path: 'summary.sh', args: [SONARQUBE_ADMIN_PASSWORD]
 
   config.trigger.before :up do |trigger|
     ldap_ca_cert_path = '../windows-domain-controller-vagrant/tmp/ExampleEnterpriseRootCA.der'

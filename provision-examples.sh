@@ -1,11 +1,27 @@
 #!/bin/bash
 set -euxo pipefail
 
-sonarqube_edition="$(curl --user admin:password --silent --fail --show-error localhost:9000/api/navigation/global | jq --raw-output .edition)"
+config_sonarqube_admin_password=$1; shift
+sonarqube_edition="$(curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/navigation/global \
+    | jq --raw-output .edition)"
+sonarqube_token="$(curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/user_tokens/generate \
+    -d name=example \
+    -d "expirationDate=$(date -d "+1 day" +%Y-%m-%d)" \
+    | jq --raw-output .token)"
 
 #
 # build some Java projects and send them to SonarQube.
-# see https://docs.sonarqube.org/9.9/analyzing-source-code/scanners/sonarscanner/
+# see https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner/
 
 apt-get install -y --no-install-recommends git-core
 apt-get install -y --no-install-recommends openjdk-17-jdk-headless
@@ -14,9 +30,9 @@ apt-get install -y --no-install-recommends maven
 # download and install SonarQube Scanner.
 mkdir /opt/sonar-scanner
 pushd /opt/sonar-scanner
-sonarqube_scanner_version=4.8.0.2856
-sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version-linux
-sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version-linux.zip
+sonarqube_scanner_version=7.1.0.4889
+sonarqube_scanner_directory_name=sonar-scanner-$sonarqube_scanner_version-linux-x64
+sonarqube_scanner_artifact=sonar-scanner-cli-$sonarqube_scanner_version-linux-x64.zip
 sonarqube_scanner_download_url=https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/$sonarqube_scanner_artifact
 wget -q $sonarqube_scanner_download_url
 unzip -q $sonarqube_scanner_artifact
@@ -36,7 +52,7 @@ javac -version
 javac -Werror -d build src/com/ruilopes/*.java
 jar cfm test-ssl-connection.jar src/META-INF/MANIFEST.MF -C build .
 jar tf test-ssl-connection.jar
-# see https://docs.sonarqube.org/9.9/analyzing-source-code/analysis-parameters/
+# see https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/analysis-parameters/
 sonarqube_scanner_extra_args=()
 if [ "$sonarqube_edition" != 'community' ]; then
 # TODO disable the automatic creation of projects on SQ
@@ -47,8 +63,7 @@ if [ "$sonarqube_edition" != 'community' ]; then
 sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
 fi
 sonar-scanner \
-    -Dsonar.login=admin \
-    -Dsonar.password=password \
+    "-Dsonar.token=$sonarqube_token" \
     -Dsonar.qualitygate.wait=true \
     "${sonarqube_scanner_extra_args[@]}" \
     "-Dsonar.links.scm=$(git remote get-url origin)" \
@@ -64,17 +79,16 @@ popd
 pushd ~
 git clone https://github.com/SonarSource/sonar-scanning-examples
 cd sonar-scanning-examples
-git checkout 2573e578f8488e73ce8c98c7695c1c277ec94511
-cd sonarqube-scanner-maven/maven-basic
+git checkout 425a18d76926ca0ff7a00824ba022b782cf4ee58
+cd sonar-scanner-maven/maven-basic
 mvn --batch-mode install
 # the sonar:sonar goal will pick most of things from pom.xml, but
 # you can also define them on the command line.
 # see https://maven.apache.org/pom.html
-# see https://docs.sonarqube.org/9.9/analyzing-source-code/analysis-parameters/
+# see https://docs.sonarqube.org/latest/analysis/analysis-parameters/
 mvn --batch-mode \
     sonar:sonar \
-    -Dsonar.login=admin \
-    -Dsonar.password=password \
+    "-Dsonar.token=$sonarqube_token" \
     -Dsonar.qualitygate.wait=true \
     "-Dsonar.links.scm=$(git remote get-url origin)"
 popd

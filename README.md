@@ -1,13 +1,13 @@
-This is a [Vagrant](https://www.vagrantup.com/) Environment for a [SonarQube](http://www.sonarqube.org) based Source Code Analysis service.
+This is a [Vagrant](https://www.vagrantup.com/) Environment for a [SonarQube](https://www.sonarsource.com/open-source-editions/sonarqube-community-edition/) based Source Code Analysis service.
 
 This will:
 
-* Install a SonarQube instance and configure it through its [Web API](https://docs.sonarqube.org/9.9/extension-guide/web-api/).
+* Install a SonarQube instance and configure it through its [Web API](https://docs.sonarsource.com/sonarqube-community-build/extension-guide/web-api/).
 * Install PostgreSQL as a database server for SonarQube.
 * Install nginx as a proxy to SonarQube.
 * Install iptables firewall.
-* Install and use the [SonarQube Scanner for Java](https://docs.sonarqube.org/9.9/analyzing-source-code/scanners/sonarscanner/) on a [raw Java project](https://github.com/rgl/test-ssl-connection).
-* Install and use the [SonarQube Scanner for Maven](https://docs.sonarqube.org/9.9/analyzing-source-code/scanners/sonarscanner-for-maven/) on a [Maven based Java project](https://github.com/SonarSource/sonar-scanning-examples/tree/master/sonarqube-scanner-maven).
+* Install and use the [SonarQube Scanner for Java](https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner/) on a [raw Java project](https://github.com/rgl/test-ssl-connection).
+* Install and use the [SonarQube Scanner for Maven](https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner-for-maven/) on a [Maven based Java project](https://github.com/SonarSource/sonar-scanning-examples/tree/master/sonar-scanner-maven).
 
 **NB** There is also a [Windows based SonarQube Vagrant Environment](https://github.com/rgl/sonarqube-windows-vagrant).
 
@@ -41,7 +41,7 @@ https://sonarqube.example.com
 
 **NB** nginx is setup with a self-signed certificate that you have to trust before being able to access the local SonarQube page.
 
-And login as `admin`/`password`.
+And login as `admin`/`HeyH0Password!`.
 
 When using the default LDAP settings you can also use the following users:
 
@@ -60,8 +60,9 @@ This means that, for example, the LDAP username `jane.doe` ends up with a SonarQ
 This means that from the SonarQube viewpoint, the LDAP user will have an external SonarQube user with the following properties:
 
 ```bash
+config_sonarqube_admin_password='HeyH0Password!'
 curl --silent --fail --show-error \
-    --user admin:password \
+    --user "admin:$config_sonarqube_admin_password" \
     -X GET \
     'localhost:9000/api/users/search?q=jane.doe' \
     | jq
@@ -97,7 +98,7 @@ Though, the SonarQube username can be later modified with:
 
 ```bash
 curl --silent --fail --show-error \
-    --user admin:password \
+    --user "admin:$config_sonarqube_admin_password" \
     -X POST \
     localhost:9000/api/users/update_login \
     -d login=jane-doe35582 \
