@@ -238,7 +238,7 @@ install -d -o root -g sonarqube -m 751 /opt/sonarqube
 # download and install SonarQube.
 # see https://www.sonarsource.com/products/sonarqube/downloads/
 pushd /opt/sonarqube
-sonarqube_version=25.6.0.109173
+sonarqube_version=25.7.0.110598
 sonarqube_directory_name=sonarqube-$sonarqube_version
 if [ "$config_sonarqube_edition" = 'community' ]; then
 sonarqube_artifact=sonarqube-$sonarqube_version.zip
