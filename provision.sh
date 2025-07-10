@@ -335,6 +335,14 @@ wait_for_ready
 #        1 special character
 curl --silent --fail --show-error --user admin:admin -X POST localhost:9000/api/users/change_password -d "login=admin&previousPassword=admin&password=$config_sonarqube_admin_password"
 
+# do not let the sonar-users create projects.
+# NB only the administrators should create them.
+curl --silent --fail --show-error \
+    --user "admin:$config_sonarqube_admin_password" \
+    -X POST localhost:9000/api/permissions/remove_group \
+    -d 'groupName=sonar-users' \
+    -d 'permission=provisioning'
+
 # accept the risk of installing 3rd party plugins.
 curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/settings/set -d 'key=sonar.plugins.risk.consent&value=ACCEPTED'
 
@@ -422,3 +430,12 @@ for permission in "${domain_admins_permissions[@]}"; do
     curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/permissions/add_group -d 'groupName=Domain Admins' -d "permission=$permission"
 done
 fi
+
+echo 'creating the sonar-scanner user...'
+curl --silent --fail --show-error \
+    --user "admin:$config_sonarqube_admin_password" \
+    -X POST localhost:9000/api/users/create \
+    -d 'login=sonar-scanner' \
+    -d 'name=Sonar Scanner' \
+    -d 'email=sonar-scanner@example.com' \
+    -d 'password=password'

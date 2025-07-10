@@ -3,6 +3,9 @@ This is a [Vagrant](https://www.vagrantup.com/) Environment for a [SonarQube](ht
 This will:
 
 * Install a SonarQube instance and configure it through its [Web API](https://docs.sonarsource.com/sonarqube-community-build/extension-guide/web-api/).
+  * Configure the `sonar-users` group to not create projects. Instead, only administrators should be able to create them.
+  * Create and configure the `sonar-scanner` user and grant it permissions to analyze projects (they are actually inherited from the `sonar-users` group).
+  * Create and analyze example projects.
 * Install PostgreSQL as a database server for SonarQube.
 * Install nginx as a proxy to SonarQube.
 * Install iptables firewall.

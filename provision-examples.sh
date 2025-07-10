@@ -10,7 +10,7 @@ sonarqube_edition="$(curl \
     localhost:9000/api/navigation/global \
     | jq --raw-output .edition)"
 sonarqube_token="$(curl \
-    --user "admin:$config_sonarqube_admin_password" \
+    --user 'sonar-scanner:password' \
     --silent \
     --fail \
     --show-error \
@@ -43,9 +43,34 @@ sed -i -E 's,^#?(sonar.host.url=).*,\1http://localhost:9000,' conf/sonar-scanner
 export PATH="$PATH:$PWD/bin"
 popd
 
-# get, compile, scan and submit a raw project to SonarQube.
+# create the test-ssl-connection project and analyze it.
+project_git_url='https://github.com/rgl/test-ssl-connection'
+project_key='test-ssl-connection'
+project_name='test-ssl-connection'
+curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/projects/create \
+    -d "project=$project_key" \
+    -d "name=$project_name" \
+    -d 'mainBranch=master' \
+    -d 'visibility=public'
+# NB we should not use one of the links names that are already defined for
+#    SonarQube analyses (e.g. `scm`), as, for some odd reason, those will
+#    override these project level ones.
+curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/project_links/create \
+    -d "projectKey=$project_key" \
+    -d 'name=Git Repository' \
+    -d "url=$project_git_url"
 pushd ~
-git clone --quiet https://github.com/rgl/test-ssl-connection.git
+git clone --quiet "$project_git_url" test-ssl-connection
 cd test-ssl-connection
 rm -rf build && mkdir -p build
 javac -version
@@ -55,29 +80,48 @@ jar tf test-ssl-connection.jar
 # see https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/analysis-parameters/
 sonarqube_scanner_extra_args=()
 if [ "$sonarqube_edition" != 'community' ]; then
-# TODO disable the automatic creation of projects on SQ
-# TODO create the project in SQ and set its default branch name to
-#      what is returned by:
-#       git symbolic-ref refs/remotes/origin/HEAD | sed 's,^refs/remotes/origin/,,'
-# TODO make sure the default branch is correctly set at the SQ project level.
-sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
+    sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
 fi
 sonar-scanner \
     "-Dsonar.token=$sonarqube_token" \
-    -Dsonar.qualitygate.wait=true \
+    '-Dsonar.qualitygate.wait=true' \
     "${sonarqube_scanner_extra_args[@]}" \
     "-Dsonar.links.scm=$(git remote get-url origin)" \
-    -Dsonar.projectKey=com.ruilopes_rgl_test-ssl-connection \
-    -Dsonar.projectName=com.ruilopes/rgl/test-ssl-connection \
+    "-Dsonar.projectKey=$project_key" \
     "-Dsonar.projectVersion=$(git rev-parse HEAD)" \
-    -Dsonar.java.source=8 \
-    -Dsonar.sources=src
+    '-Dsonar.java.source=8' \
+    '-Dsonar.sources=src'
 popd
 
 
-# get, compile, scan and submit a maven based project to SonarQube.
+# create the sonar-scanning-examples project and analyze it.
+project_git_url='https://github.com/SonarSource/sonar-scanning-examples'
+project_key='sonar-scanning-examples'
+project_name='sonar-scanning-examples'
+curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/projects/create \
+    -d "project=$project_key" \
+    -d "name=$project_name" \
+    -d 'mainBranch=master' \
+    -d 'visibility=public'
+# NB we should not use one of the links names that are already defined for
+#    SonarQube analyses (e.g. `scm`), as, for some odd reason, those will
+#    override these project level ones.
+curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/project_links/create \
+    -d "projectKey=$project_key" \
+    -d 'name=Git Repository' \
+    -d "url=$project_git_url"
 pushd ~
-git clone https://github.com/SonarSource/sonar-scanning-examples
+git clone "$project_git_url" sonar-scanning-examples
 cd sonar-scanning-examples
 git checkout 425a18d76926ca0ff7a00824ba022b782cf4ee58
 cd sonar-scanner-maven/maven-basic
@@ -89,34 +133,54 @@ mvn --batch-mode install
 mvn --batch-mode \
     sonar:sonar \
     "-Dsonar.token=$sonarqube_token" \
-    -Dsonar.qualitygate.wait=true \
-    "-Dsonar.links.scm=$(git remote get-url origin)"
+    '-Dsonar.qualitygate.wait=true' \
+    "-Dsonar.links.scm=$(git remote get-url origin)" \
+    "-Dsonar.projectKey=$project_key"
 popd
 
 
 #
-# get and submit a shell based project to SonarQube.
+# create the sonarqube-vagrant project and analyze it.
 # NB this should trigger the shellcheck plugin.
+project_git_url='https://github.com/rgl/sonarqube-vagrant'
+project_key='sonarqube-vagrant'
+project_name='sonarqube-vagrant'
+curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/projects/create \
+    -d "project=$project_key" \
+    -d "name=$project_name" \
+    -d 'mainBranch=master' \
+    -d 'visibility=public'
+# NB we should not use one of the links names that are already defined for
+#    SonarQube analyses (e.g. `scm`), as, for some odd reason, those will
+#    override these project level ones.
+curl \
+    --user "admin:$config_sonarqube_admin_password" \
+    --silent \
+    --fail \
+    --show-error \
+    localhost:9000/api/project_links/create \
+    -d "projectKey=$project_key" \
+    -d 'name=Git Repository' \
+    -d "url=$project_git_url"
 pushd ~
-git clone --quiet https://github.com/rgl/sonarqube-vagrant.git
+git clone --quiet "$project_git_url" sonarqube-vagrant
 cd sonarqube-vagrant
 # see https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/analysis-parameters/
 sonarqube_scanner_extra_args=()
 if [ "$sonarqube_edition" != 'community' ]; then
-# TODO disable the automatic creation of projects on SQ
-# TODO create the project in SQ and set its default branch name to
-#      what is returned by:
-#       git symbolic-ref refs/remotes/origin/HEAD | sed 's,^refs/remotes/origin/,,'
-# TODO make sure the default branch is correctly set at the SQ project level.
-sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
+    sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
 fi
 sonar-scanner \
     "-Dsonar.token=$sonarqube_token" \
-    -Dsonar.qualitygate.wait=true \
+    '-Dsonar.qualitygate.wait=true' \
     "${sonarqube_scanner_extra_args[@]}" \
     "-Dsonar.links.scm=$(git remote get-url origin)" \
-    -Dsonar.projectKey=com.ruilopes_rgl_sonarqube-vagrant \
-    -Dsonar.projectName=com.ruilopes/rgl/sonarqube-vagrant \
+    "-Dsonar.projectKey=$project_key" \
     "-Dsonar.projectVersion=$(git rev-parse HEAD)" \
-    -Dsonar.sources=.
+    '-Dsonar.sources=.'
 popd
