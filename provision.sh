@@ -129,25 +129,25 @@ EOF
 
 pushd /etc/ssl/private
 openssl genrsa \
-    -out $config_fqdn-keypair.pem \
+    -out "$config_fqdn-keypair.pem" \
     2048 \
     2>/dev/null
-chmod 400 $config_fqdn-keypair.pem
+chmod 400 "$config_fqdn-keypair.pem"
 openssl req -new \
     -sha256 \
     -subj "/CN=$config_fqdn" \
-    -key $config_fqdn-keypair.pem \
-    -out $config_fqdn-csr.pem
+    -key "$config_fqdn-keypair.pem" \
+    -out "$config_fqdn-csr.pem"
 openssl x509 -req -sha256 \
-    -signkey $config_fqdn-keypair.pem \
+    -signkey "$config_fqdn-keypair.pem" \
     -extensions a \
     -extfile <(echo "[a]
         subjectAltName=DNS:$config_fqdn
         extendedKeyUsage=serverAuth
         ") \
     -days 365 \
-    -in  $config_fqdn-csr.pem \
-    -out $config_fqdn-crt.pem
+    -in  "$config_fqdn-csr.pem" \
+    -out "$config_fqdn-crt.pem"
 popd
 
 
@@ -238,22 +238,22 @@ install -d -o root -g sonarqube -m 751 /opt/sonarqube
 # download and install SonarQube.
 # see https://www.sonarsource.com/products/sonarqube/downloads/
 pushd /opt/sonarqube
-sonarqube_version=25.7.0.110598
-sonarqube_directory_name=sonarqube-$sonarqube_version
+sonarqube_version="25.7.0.110598"
+sonarqube_directory_name="sonarqube-$sonarqube_version"
 if [ "$config_sonarqube_edition" = 'community' ]; then
-sonarqube_artifact=sonarqube-$sonarqube_version.zip
-sonarqube_download_url=https://binaries.sonarsource.com/Distribution/sonarqube/$sonarqube_artifact
+sonarqube_artifact="sonarqube-$sonarqube_version.zip"
+sonarqube_download_url="https://binaries.sonarsource.com/Distribution/sonarqube/$sonarqube_artifact"
 else
-sonarqube_artifact=sonarqube-$config_sonarqube_edition-$sonarqube_version.zip
-sonarqube_download_url=https://binaries.sonarsource.com/CommercialDistribution/sonarqube-$config_sonarqube_edition/$sonarqube_artifact
+sonarqube_artifact="sonarqube-$config_sonarqube_edition-$sonarqube_version.zip"
+sonarqube_download_url="https://binaries.sonarsource.com/CommercialDistribution/sonarqube-$config_sonarqube_edition/$sonarqube_artifact"
 fi
-wget -q $sonarqube_download_url
-unzip -q $sonarqube_artifact
-mv $sonarqube_directory_name/* .
-rm -rf $sonarqube_directory_name bin $sonarqube_artifact*
+wget -q "$sonarqube_download_url"
+unzip -q "$sonarqube_artifact"
+mv "$sonarqube_directory_name"/* .
+rm -rf "$sonarqube_directory_name" bin "$sonarqube_artifact"
 for d in data logs temp extensions; do
-    chmod 700 $d
-    chown -R sonarqube:sonarqube $d
+    chmod 700 "$d"
+    chown -R sonarqube:sonarqube "$d"
 done
 chown -R root:sonarqube conf
 chmod 750 conf
