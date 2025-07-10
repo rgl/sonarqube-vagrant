@@ -352,6 +352,7 @@ curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password
 # install new plugins.
 plugins=(
     'checkstyle'      # https://github.com/checkstyle/sonar-checkstyle
+    'shellcheck'      # https://github.com/sbaudoin/sonar-shellcheck
 )
 for plugin in "${plugins[@]}"; do
     echo "installing the $plugin plugin..."
@@ -360,6 +361,16 @@ done
 echo 'restarting SonarQube...'
 curl --silent --fail --show-error --user "admin:$config_sonarqube_admin_password" -X POST localhost:9000/api/system/restart
 wait_for_ready
+
+# install shellcheck.
+# NB shellcheck is also available in ubuntu 22.04, but its v0.8.0 which is
+#    somewhat old, so we manually install it.
+t="$(mktemp -q -d --suffix=.shellcheck)"
+shellcheck_version="0.10.0"
+shellcheck_download_url="https://github.com/koalaman/shellcheck/releases/download/v$shellcheck_version/shellcheck-v$shellcheck_version.linux.x86_64.tar.xz"
+wget -qO- "$shellcheck_download_url" | tar xJ -C "$t" --strip-components 1
+install -o root -g root -m 755 "$t/shellcheck" /usr/local/bin
+rm -rf "$t"
 
 #
 # use LDAP for user authentication (when enabled).

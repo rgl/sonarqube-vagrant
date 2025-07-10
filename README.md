@@ -8,6 +8,7 @@ This will:
 * Install iptables firewall.
 * Install and use the [SonarQube Scanner for Java](https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner/) on a [raw Java project](https://github.com/rgl/test-ssl-connection).
 * Install and use the [SonarQube Scanner for Maven](https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/scanners/sonarscanner-for-maven/) on a [Maven based Java project](https://github.com/SonarSource/sonar-scanning-examples/tree/master/sonar-scanner-maven).
+* Install and use the [Sonar ShellCheck plugin](https://github.com/sbaudoin/sonar-shellcheck) to analyze a bash project.
 
 **NB** There is also a [Windows based SonarQube Vagrant Environment](https://github.com/rgl/sonarqube-windows-vagrant).
 

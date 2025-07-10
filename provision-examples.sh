@@ -92,3 +92,31 @@ mvn --batch-mode \
     -Dsonar.qualitygate.wait=true \
     "-Dsonar.links.scm=$(git remote get-url origin)"
 popd
+
+
+#
+# get and submit a shell based project to SonarQube.
+# NB this should trigger the shellcheck plugin.
+pushd ~
+git clone --quiet https://github.com/rgl/sonarqube-vagrant.git
+cd sonarqube-vagrant
+# see https://docs.sonarsource.com/sonarqube-community-build/analyzing-source-code/analysis-parameters/
+sonarqube_scanner_extra_args=()
+if [ "$sonarqube_edition" != 'community' ]; then
+# TODO disable the automatic creation of projects on SQ
+# TODO create the project in SQ and set its default branch name to
+#      what is returned by:
+#       git symbolic-ref refs/remotes/origin/HEAD | sed 's,^refs/remotes/origin/,,'
+# TODO make sure the default branch is correctly set at the SQ project level.
+sonarqube_scanner_extra_args+=("-Dsonar.branch.name=$(git rev-parse --abbrev-ref HEAD)")
+fi
+sonar-scanner \
+    "-Dsonar.token=$sonarqube_token" \
+    -Dsonar.qualitygate.wait=true \
+    "${sonarqube_scanner_extra_args[@]}" \
+    "-Dsonar.links.scm=$(git remote get-url origin)" \
+    -Dsonar.projectKey=com.ruilopes_rgl_sonarqube-vagrant \
+    -Dsonar.projectName=com.ruilopes/rgl/sonarqube-vagrant \
+    "-Dsonar.projectVersion=$(git rev-parse HEAD)" \
+    -Dsonar.sources=.
+popd
