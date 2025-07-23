@@ -65,6 +65,45 @@ This means that from the SonarQube viewpoint, the LDAP user will have an externa
 
 ```bash
 config_sonarqube_admin_password='HeyH0Password!'
+# NB using the q query string parameter you can also search in other properties.
+curl --silent --fail --show-error \
+    --user "admin:$config_sonarqube_admin_password" \
+    -X GET \
+    'localhost:9000/api/v2/users-management/users?externalIdentity=jane.doe' \
+    | jq
+```
+```json
+{
+    "users": [
+        {
+            "id": "57fa19f0-0923-4713-8e39-4627a8decda5",
+            "login": "jane-doe35582",
+            "name": "Jane Doe",
+            "email": "jane.doe@example.com",
+            "active": true,
+            "local": false,
+            "managed": false,
+            "externalLogin": "jane.doe",
+            "externalProvider": "LDAP_default",
+            "externalId": "jane.doe",
+            "avatar": "0cba00ca3da1b283a57287bcceb17e35",
+            "sonarQubeLastConnectionDate": "2025-07-21T06:21:42+0000",
+            "sonarLintLastConnectionDate": null,
+            "scmAccounts": []
+        }
+    ],
+    "page": {
+        "pageIndex": 1,
+        "pageSize": 50,
+        "total": 1
+    }
+}
+```
+
+Or, using the `api/users/search` api (deprecated since SonarQube 10.4):
+
+```bash
+config_sonarqube_admin_password='HeyH0Password!'
 curl --silent --fail --show-error \
     --user "admin:$config_sonarqube_admin_password" \
     -X GET \
