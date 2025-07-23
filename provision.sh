@@ -54,18 +54,18 @@ done
 for chain in INPUT FORWARD OUTPUT; do
     iptables -P $chain ACCEPT
 done
-# set the default policy to block incomming traffic.
+# set the default policy to block incoming traffic.
 iptables -P INPUT DROP
 iptables -P FORWARD DROP
-# allow incomming traffic on the loopback interface.
+# allow incoming traffic on the loopback interface.
 iptables -A INPUT -i lo -j ACCEPT
-# allow incomming established sessions.
+# allow incoming established sessions.
 iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-# allow incomming ICMP.
+# allow incoming ICMP.
 iptables -A INPUT -p icmp --icmp-type any -j ACCEPT
-# allow incomming SSH connections.
+# allow incoming SSH connections.
 iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-# allow incomming HTTP(S) connections.
+# allow incoming HTTP(S) connections.
 iptables -A INPUT -p tcp --dport 80 -j ACCEPT
 iptables -A INPUT -p tcp --dport 443 -j ACCEPT
 # load iptables rules on boot.
