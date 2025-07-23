@@ -92,7 +92,8 @@ curl --silent --fail --show-error \
             "externalIdentity": "jane.doe",
             "externalProvider": "LDAP_default",
             "avatar": "0cba00ca3da1b283a57287bcceb17e35",
-            "lastConnectionDate": "2023-04-14T06:29:42+0000"
+            "lastConnectionDate": "2025-07-23T06:21:42+0000",
+            "managed": false
         }
     ]
 }
